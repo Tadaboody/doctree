@@ -1,0 +1,4 @@
+.coverage
+cov.xml
+.pytest_cache
+venv
