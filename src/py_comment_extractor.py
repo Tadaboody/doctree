@@ -11,4 +11,9 @@ def import_module(module_path: str) -> ModuleType:
     return module
 
 def module_docstring(module_path:str) -> str:
-    return import_module(module_path).__doc__
+    if Path(module_path).suffix != '.py':
+        return ''
+    try:
+        return import_module(module_path).__doc__
+    except Exception:  # pylint: disable=broad-except
+        return ''
