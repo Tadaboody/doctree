@@ -1,19 +1,26 @@
 """The main tree script"""
-from pathlib import Path
+import glob
 import os
+from pathlib import Path
 from typing import Iterator
-from src.py_comment_extractor import module_docstring
 
+from src.py_comment_extractor import module_docstring
 
 BACKSLASH = '\\'
 
 
-def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|')-> str:
+fnmatch = glob.fnmatch.fnmatch # can't import for some reason
+
+
+def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', ignored_globs=('.git', 'venv','*cache*'))-> str:
 
     def rec_tree_dir(current_dir: Path, depth) -> Iterator[str]:
         if max_depth and depth > max_depth:
             return
-        for file in os.listdir(current_dir):
+        non_ignored_files = (file for file in os.listdir(current_dir) if not any(
+            fnmatch(file, pattern) for pattern in ignored_globs))
+        
+        for file in non_ignored_files:
             full_path = os.path.join(current_dir, file)
             isdir = os.path.isdir(full_path)
             docstring = module_docstring(full_path)
