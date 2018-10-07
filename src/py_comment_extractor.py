@@ -1,3 +1,4 @@
+"""Extracts comments from python files"""
 from pathlib import Path
 import importlib.util
 from types import ModuleType
