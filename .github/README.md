@@ -3,8 +3,17 @@
 
 Essentially this project will leverage built-in documentation schemes like python docstrings to create 
 
+## Installation
+clone the repository
+run ``python setup.py install``
+### for development:
+run 
+```
+pip install -e .
+pip install -r requirements.txt
+```
 
-### Example output (in current version):
+## Example output (in current version 1b45766):
 
 ```
 |requirements.txt
@@ -15,8 +24,11 @@ Essentially this project will leverage built-in documentation schemes like pytho
 | |\test_dir
 | | |\repo
 | | |/
+| | |\package  # 
+| | |/
 | |/
 | |test_py_comment_extractor.py  # Test file for the python comment extractor
+| |test_doctree.py
 |/
 |setup.py
 |.gitignore
@@ -25,42 +37,14 @@ Essentially this project will leverage built-in documentation schemes like pytho
 | |base_README.md
 | |README.md
 | |example_output.md
+| |install-pre-commit-script.sh
 | |pre-commit-script.sh
-|/
-|\build
-| |\bdist.macosx-10.13-x86_64
-| |/
-|/
-|\.vscode
-| |settings.json
-| |\.history
-| | |run_tests_with_coverage_20181003165105.sh
-| | |.gitignore_20181003170633
-| | |doctree_20181003141113.py
-| | |run_tests_with_coverage_20181003165725.sh
-| | |\tests
-| | |/
-| | |.env_20181003141734
-| | |doctree_20181003141112.py
-| | |.gitignore_20181003170626
-| | |.env_20181003141747
-| | |run_tests_with_coverage_20181003165139.sh
-| | |doctree_20181003141140.py
-| | |\.github
-| | |/
-| | |\src
-| | |/
-| |/
-| |\.ropeproject
-| | |config.py
-| | |objectdb
-| |/
 |/
 |\src
 | |git_ignored_files.py  # Outputs files ignored by git
 | |util.py  # Misc util functions
-| |__init__.py
 | |py_comment_extractor.py  # Extracts comments from python files
+| |main.py  # Entry points for command scripts
 | |doctree.py  # The main tree script
 |/
 ```
