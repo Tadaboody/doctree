@@ -55,7 +55,7 @@ def run(start, times=1):
         print(indent_char*times + BACKSLASH)
         print(indent_char*(1 + times) + dirs[_dir])
         run(_dir, times=times+1)
-    print(indent_char*times + SLASH)
+    print(indent_char*(times-1) + SLASH)
 
 if __name__ == '__main__':
     print('.')
