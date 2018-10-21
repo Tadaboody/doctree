@@ -8,40 +8,55 @@ from src.git_ignored_files import git_ignored_files,cd
 from src.py_comment_extractor import module_docstring,package_docstring
 
 BACKSLASH = '\\'
-
+SLASH = '/'
 
 fnmatch = glob.fnmatch.fnmatch # can't import for some reason
 
+def ignored(filename: str, starting_dir: Path, ignored_globs=('.git', '__init__.py','.vscode')):
+    """
+    manage the ignore files (.gitignore and ignored_globals) for this path.
+    """
+    path_ignored = git_ignored_files(starting_dir) + ignored_globs  # check if need to add git_ignored_files(starting_dir)
 
-def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', ignored_globs=('.git', '__init__.py','.vscode'))-> str:
+    return any(fnmatch(filename, path) for path in path_ignored)
 
-    def rec_tree_dir(current_dir: str, depth) -> Iterator[str]:
-        if max_depth and depth > max_depth:
-            return
-        def ignored(file):
-            ignore_patterns = ignored_globs + git_ignored_files(current_dir) + git_ignored_files(starting_dir)
-            return any(fnmatch(file, pattern) or fnmatch(os.path.join(current_dir, file), pattern) or fnmatch(os.path.abspath(file), pattern)
-                       for pattern in ignore_patterns)
 
-        non_ignored_files = (file for file in os.listdir(current_dir) if not ignored(file))
-        
-        for file in non_ignored_files:
-            full_path = os.path.join(current_dir, file)
-            isdir = os.path.isdir(full_path)
-            docstring = module_docstring(full_path) + package_docstring(full_path)
-            doc = f'  # {module_docstring(full_path)}' if docstring else ''
-            yield depth_seperator(indent_char, depth) + (BACKSLASH if isdir else '') + file + doc
-            if isdir:
-                yield from rec_tree_dir(current_dir=full_path, depth=depth+1)
-                yield f"{depth_seperator(indent_char,depth)}/"
-            
-    with cd(starting_dir):
-        return '\n'.join(rec_tree_dir(starting_dir, 0))
+def tree_dir(starting_dir: Path, indent_char: str="|", times_indented:int=1):
+    """
+    params:
+        startding_dir: the directory you start in
+    returns: The documantion string
+    """
+    out = dict()
+    my_dirs_docs = dict()
+    not_ignored_files = (Path(this_dir_not_ignored_file) for this_dir_not_ignored_file in Path(starting_dir).glob('*') if not ignored(this_dir_not_ignored_file, starting_dir))
+    for item in not_ignored_files:
+        # item is all the things in the directory that does not ignored
+        full_path = Path.resolve(item)
+        docstring = module_docstring(full_path) + package_docstring(full_path)
+        doc = f'  # {module_docstring(full_path)}' if docstring else ''
+        if not full_path.is_dir():
+            out[item.name] = indent_char*times_indented + item.name + doc
+        else:
+            my_dirs_docs[item.name] = item.name + doc
+    for o in out:
+        print(out[o])
+    return my_dirs_docs
 
 
 def depth_seperator(indent_char: str, depth: int)->str:
     return f"{indent_char}{f' {indent_char}'*depth}"
 
 
+def run(start, times=1):
+    dirs = tree_dir(start, times_indented=times)
+    indent_char = "|"
+    for _dir in dirs:
+        print(indent_char*times + BACKSLASH)
+        print(indent_char*(1 + times) + dirs[_dir])
+        run(_dir, times=times+1)
+    print(indent_char*times + SLASH)
+
 if __name__ == '__main__':
-    print(tree_dir('.', max_depth=2))
+    print('.')
+    run('.')
