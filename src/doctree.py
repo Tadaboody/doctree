@@ -2,11 +2,10 @@
 import glob
 import os
 from pathlib import Path
-from typing import Iterator, Iterable
-import logging
+from typing import Iterator
 
 from src.git_ignored_files import git_ignored_files,cd
-from src.py_comment_extractor import module_docstring
+from src.py_comment_extractor import module_docstring,package_docstring
 
 BACKSLASH = '\\'
 
@@ -14,15 +13,13 @@ BACKSLASH = '\\'
 fnmatch = glob.fnmatch.fnmatch # can't import for some reason
 
 
-def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', ignored_globs=('.git', ))-> str:
+def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', ignored_globs=('.git', '__init__.py','.vscode'))-> str:
 
     def rec_tree_dir(current_dir: str, depth) -> Iterator[str]:
         if max_depth and depth > max_depth:
             return
         def ignored(file):
             ignore_patterns = ignored_globs + git_ignored_files(current_dir) + git_ignored_files(starting_dir)
-            # logging.debug(file)
-            # logging.debug(os.path.join(current_dir, file))
             return any(fnmatch(file, pattern) or fnmatch(os.path.join(current_dir, file), pattern) or fnmatch(os.path.abspath(file), pattern)
                        for pattern in ignore_patterns)
 
@@ -31,8 +28,8 @@ def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', igno
         for file in non_ignored_files:
             full_path = os.path.join(current_dir, file)
             isdir = os.path.isdir(full_path)
-            docstring = module_docstring(full_path)
-            doc = f'  # {module_docstring(full_path)}' if not isdir and docstring else ''
+            docstring = module_docstring(full_path) + package_docstring(full_path)
+            doc = f'  # {module_docstring(full_path)}' if docstring else ''
             yield depth_seperator(indent_char, depth) + (BACKSLASH if isdir else '') + file + doc
             if isdir:
                 yield from rec_tree_dir(current_dir=full_path, depth=depth+1)
