@@ -7,12 +7,12 @@ Essentially this project will leverage built-in documentation schemes like pytho
 clone the repository
 run ``python setup.py install``
 ### for development:
-run 
+First, you need to install the program. you can do this by typing the commands below on your terminal: 
 ```
 pip install -e .
 pip install -r requirements.txt
 ```
-
+In order to run the program you need to run ```doctree``` on your terminal.
 ## Example output (in current version 1b45766):
 
 ```
@@ -48,3 +48,4 @@ pip install -r requirements.txt
 | |doctree.py  # The main tree script
 |/
 ```
+
