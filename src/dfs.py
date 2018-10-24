@@ -1,17 +1,20 @@
 """Generic and pythonic implementation of the Depth First Search traversal algorithm"""
 from typing import Callable, List, Iterable, TypeVar, Hashable, Tuple
 from pathlib import Path
+from collections import namedtuple
 
-T = TypeVar('T', bound=Hashable)
+DfsVisit = namedtuple('DfsVisit', ['node', 'depth'])
+NodeType = TypeVar('NodeType', bound=Hashable)
+StackType = TypeVar('StackType')
 
 
-def iter_top(stack: List[T])->Iterable[T]:
+def iter_top(stack: List[StackType])->Iterable[StackType]:
     """Iterate a stack as long as it is full, yielding the top every time"""
     while stack:
         yield stack.pop()
 
 
-def dfs(root: T, neighbors_func: Callable[[T], Iterable[T]], predicate: Callable[[T], bool]=lambda x: True)->Iterable[Tuple[T, int]]:
+def dfs(root: NodeType, neighbors_func: Callable[[NodeType], Iterable[NodeType]], predicate: Callable[[NodeType], bool]=lambda x: True)->Iterable[DfsVisit]:
     """Iterate starting from root, going depth first
     `neighbors_func`: a function that returns an iterable of the nodes neighbors
     returns: A tuple of (item, depth), in order of dfs traversal
