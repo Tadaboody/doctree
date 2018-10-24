@@ -1,47 +1,60 @@
 """The main tree script"""
-import glob
-import os
+from functools import partial
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Tuple
 
-from src.git_ignored_files import git_ignored_files,cd
-from src.py_comment_extractor import module_docstring,package_docstring
+from src.git_ignored_files import git_ignored_files
+from src.py_comment_extractor import module_docstring, package_docstring
+from src.dfs import dfs, safe_iterdir
 
 BACKSLASH = '\\'
+SLASH = '/'
 
 
-fnmatch = glob.fnmatch.fnmatch # can't import for some reason
+def ignored(filename: Path, starting_dir: Path, ignored_globs: Path):
+    """Check if a file is ignored by the user"""
+    if filename == starting_dir:
+        return False
+    path_ignored = git_ignored_files(
+        starting_dir) + ignored_globs
+    return any(filename.match(str(path)) for path in path_ignored)
 
 
-def tree_dir(starting_dir: Path, max_depth: int=None, indent_char: str='|', ignored_globs=('.git', '__init__.py','.vscode'))-> str:
-
-    def rec_tree_dir(current_dir: str, depth) -> Iterator[str]:
-        if max_depth and depth > max_depth:
-            return
-        def ignored(file):
-            ignore_patterns = ignored_globs + git_ignored_files(current_dir) + git_ignored_files(starting_dir)
-            return any(fnmatch(file, pattern) or fnmatch(os.path.join(current_dir, file), pattern) or fnmatch(os.path.abspath(file), pattern)
-                       for pattern in ignore_patterns)
-
-        non_ignored_files = (file for file in os.listdir(current_dir) if not ignored(file))
-        
-        for file in non_ignored_files:
-            full_path = os.path.join(current_dir, file)
-            isdir = os.path.isdir(full_path)
-            docstring = module_docstring(full_path) + package_docstring(full_path)
-            doc = f'  # {module_docstring(full_path)}' if docstring else ''
-            yield depth_seperator(indent_char, depth) + (BACKSLASH if isdir else '') + file + doc
-            if isdir:
-                yield from rec_tree_dir(current_dir=full_path, depth=depth+1)
-                yield f"{depth_seperator(indent_char,depth)}/"
-            
-    with cd(starting_dir):
-        return '\n'.join(rec_tree_dir(starting_dir, 0))
+DEFAULT_IGNORE = ('__pycache__', '.git', '__init__.py')
 
 
-def depth_seperator(indent_char: str, depth: int)->str:
-    return f"{indent_char}{f' {indent_char}'*depth}"
+def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->Iterator[Tuple[str, int]]:
+    """
+    params:
+        starting_dir: the directory you start in
+        ignored_globs: glob patterns that should be ignored in iteration
+        max_depth: The maximum depth to go into the file tree
+    returns: The documantion string
+    """
+
+    item: Path
+    ignored_in_tree = partial(
+        ignored, starting_dir=starting_dir, ignored_globs=ignored_globs)
+    dfs_walk = dfs(Path(starting_dir), safe_iterdir,
+                   predicate=ignored_in_tree, max_depth=max_depth)
+    for item, depth in dfs_walk:
+        # item is all the things in the directory that does not ignored
+        full_path = Path.resolve(item)
+        docstring = module_docstring(full_path) + package_docstring(full_path)
+        doc = f'  # {module_docstring(full_path)}' if docstring else ''
+        yield item, doc, depth
+
+
+def depth_seperator(indent_char: str, depth: int, is_dir: bool)->str:
+    """Returns the prefix to display a node of `depth`"""
+    return f"{indent_char}{f' {indent_char}'*depth}{BACKSLASH if is_dir else ''}"
+
+
+def print_doctree(starting_dir: str, max_depth: int=None):
+    """Prints the doctree in a markdown-tolerant way"""
+    for file, doc, depth in tree_dir(Path(starting_dir), max_depth=max_depth):
+        print(depth_seperator('|', depth, file.is_dir()) + file.name + doc)
 
 
 if __name__ == '__main__':
-    print(tree_dir('.', max_depth=2))
+    print_doctree('.')

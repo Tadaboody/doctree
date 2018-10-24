@@ -1,7 +1,7 @@
 """Outputs files ignored by git"""
 from typing import Tuple
 from subprocess import check_output,CalledProcessError
-import os
+from pathlib import Path
 from src.util import cd
 
 
@@ -12,7 +12,7 @@ def git_ignored_files(repo_path:str='.')->Tuple[str]:
     try:
         with cd(repo_path):
             git_output =  check_output(['git', 'status', '--ignored', '--porcelain']).decode("utf-8").splitlines()
-            return tuple( os.path.abspath(file.strip('!! ')) for file in git_output
+            return tuple( Path(file.strip('!! ')) for file in git_output
                     if file.startswith('!!') )
     except CalledProcessError:
         return ()
