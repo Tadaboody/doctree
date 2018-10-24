@@ -1,5 +1,5 @@
 """The main tree script"""
-import glob
+from functools import partial
 from pathlib import Path
 from typing import Iterator, Tuple
 
@@ -10,6 +10,16 @@ from src.dfs import dfs, safe_iterdir
 BACKSLASH = '\\'
 SLASH = '/'
 
+
+def ignored(filename: Path, starting_dir: Path, ignored_globs: Path):
+    """Check if a file is ignored by the user"""
+    if filename == starting_dir:
+        return False
+    path_ignored = git_ignored_files(
+        starting_dir) + ignored_globs
+    return any(filename.match(str(path)) for path in path_ignored)
+
+
 def tree_dir(starting_dir: Path, ignored_globs=('__pycache__', '.git', '__init__.py'))->Iterator[Tuple[str, int]]:
     """
     params:
@@ -18,16 +28,8 @@ def tree_dir(starting_dir: Path, ignored_globs=('__pycache__', '.git', '__init__
     returns: The documantion string
     """
 
-    def ignored(filename: Path):
-        """Check if a file is ignored by the user"""
-        if filename == starting_dir:
-            return False
-        path_ignored = git_ignored_files(
-            starting_dir) + ignored_globs 
-        return any(filename.match(str(path)) for path in path_ignored)
-
     item: Path
-    for item, depth in ((path, _) for path, _ in dfs(Path(starting_dir), safe_iterdir, ignored)):
+    for item, depth in dfs(Path(starting_dir), safe_iterdir, partial(ignored, starting_dir=starting_dir, ignored_globs=ignored_globs)):
         # item is all the things in the directory that does not ignored
         full_path = Path.resolve(item)
         docstring = module_docstring(full_path) + package_docstring(full_path)
