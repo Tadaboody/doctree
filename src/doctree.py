@@ -10,25 +10,20 @@ from src.dfs import dfs, safe_iterdir
 BACKSLASH = '\\'
 SLASH = '/'
 
-fnmatch = glob.fnmatch.fnmatch  # can't import for some reason
-
-
 def tree_dir(starting_dir: Path, ignored_globs=('__pycache__', '.git', '__init__.py'))->Iterator[Tuple[str, int]]:
     """
     params:
         starting_dir: the directory you start in
+        ignored_globs: glob patterns that should be ignored in iteration
     returns: The documantion string
     """
 
     def ignored(filename: Path):
-        """
-        manage the ignore files (.gitignore and ignored_globals) for this path.
-        """
+        """Check if a file is ignored by the user"""
         if filename == starting_dir:
             return False
         path_ignored = git_ignored_files(
-            starting_dir) + ignored_globs  # check if need to add git_ignored_files(starting_dir)
-
+            starting_dir) + ignored_globs 
         return any(filename.match(str(path)) for path in path_ignored)
 
     item: Path
@@ -41,13 +36,15 @@ def tree_dir(starting_dir: Path, ignored_globs=('__pycache__', '.git', '__init__
 
 
 def depth_seperator(indent_char: str, depth: int, is_dir: bool)->str:
+    """Returns the prefix to display a node of `depth`"""
     return f"{indent_char}{f' {indent_char}'*depth}{BACKSLASH if is_dir else ''}"
 
 
-def run(starting_dir: str):
+def print_doctree(starting_dir: str):
+    """Prints the doctree in a markdown-tolerant way"""
     for file, doc, depth in tree_dir(Path(starting_dir)):
         print(depth_seperator('|', depth, file.is_dir()) + file.name + doc)
 
 
 if __name__ == '__main__':
-    run('.')
+    print_doctree('.')
