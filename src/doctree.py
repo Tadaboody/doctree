@@ -20,16 +20,24 @@ def ignored(filename: Path, starting_dir: Path, ignored_globs: Path):
     return any(filename.match(str(path)) for path in path_ignored)
 
 
-def tree_dir(starting_dir: Path, ignored_globs=('__pycache__', '.git', '__init__.py'))->Iterator[Tuple[str, int]]:
+DEFAULT_IGNORE = ('__pycache__', '.git', '__init__.py')
+
+
+def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->Iterator[Tuple[str, int]]:
     """
     params:
         starting_dir: the directory you start in
         ignored_globs: glob patterns that should be ignored in iteration
+        max_depth: The maximum depth to go into the file tree
     returns: The documantion string
     """
 
     item: Path
-    for item, depth in dfs(Path(starting_dir), safe_iterdir, partial(ignored, starting_dir=starting_dir, ignored_globs=ignored_globs)):
+    ignored_in_tree = partial(
+        ignored, starting_dir=starting_dir, ignored_globs=ignored_globs)
+    dfs_walk = dfs(Path(starting_dir), safe_iterdir,
+                   predicate=ignored_in_tree, max_depth=max_depth)
+    for item, depth in dfs_walk:
         # item is all the things in the directory that does not ignored
         full_path = Path.resolve(item)
         docstring = module_docstring(full_path) + package_docstring(full_path)
@@ -42,9 +50,9 @@ def depth_seperator(indent_char: str, depth: int, is_dir: bool)->str:
     return f"{indent_char}{f' {indent_char}'*depth}{BACKSLASH if is_dir else ''}"
 
 
-def print_doctree(starting_dir: str):
+def print_doctree(starting_dir: str, max_depth: int=None):
     """Prints the doctree in a markdown-tolerant way"""
-    for file, doc, depth in tree_dir(Path(starting_dir)):
+    for file, doc, depth in tree_dir(Path(starting_dir), max_depth=max_depth):
         print(depth_seperator('|', depth, file.is_dir()) + file.name + doc)
 
 

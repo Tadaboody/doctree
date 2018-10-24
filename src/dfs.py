@@ -14,7 +14,10 @@ def iter_top(stack: List[StackType])->Iterable[StackType]:
         yield stack.pop()
 
 
-def dfs(root: NodeType, neighbors_func: Callable[[NodeType], Iterable[NodeType]], predicate: Callable[[NodeType], bool]=lambda x: True)->Iterable[DfsVisit]:
+def dfs(root: NodeType, neighbors_func: Callable[[NodeType], Iterable[NodeType]],
+        *,  # Every argument after this has to be a keyword argument
+        predicate: Callable[[NodeType], bool]=lambda x: True,
+        max_depth: int=None)->Iterable[DfsVisit]:
     """Iterate starting from root, going depth first
     `neighbors_func`: a function that returns an iterable of the nodes neighbors
     returns: A tuple of (item, depth), in order of dfs traversal
@@ -22,7 +25,8 @@ def dfs(root: NodeType, neighbors_func: Callable[[NodeType], Iterable[NodeType]]
     stack = [(root, 0)]
     visited_nodes = set()
     for item, depth in ((item, depth) for item, depth in iter_top(stack)
-                        if item not in visited_nodes and not predicate(item)):
+                        if item not in visited_nodes and not predicate(item)
+                        and (max_depth is None or depth <= max_depth)):
         visited_nodes.add(item)
         stack.extend((item, depth+1) for item in neighbors_func(item))
         yield item, depth

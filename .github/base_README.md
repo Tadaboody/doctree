@@ -13,6 +13,6 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-## Example output (in current version 1b45766):
+## Example output (in current version a7f0237):
 
 ```
