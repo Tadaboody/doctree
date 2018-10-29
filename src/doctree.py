@@ -1,7 +1,7 @@
 """The main tree script"""
 from functools import partial
 from pathlib import Path
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, Generator
 
 from src.git_ignored_files import git_ignored_files
 from src.py_comment_extractor import module_docstring, package_docstring
@@ -11,7 +11,7 @@ BACKSLASH = '\\'
 SLASH = '/'
 
 
-def ignored(filename: Path, starting_dir: Path, ignored_globs: Path):
+def ignored(filename: Path, starting_dir: Path, ignored_globs: Tuple[Path, ...]):
     """Check if a file is ignored by the user"""
     if filename == starting_dir:
         return False
@@ -23,13 +23,13 @@ def ignored(filename: Path, starting_dir: Path, ignored_globs: Path):
 DEFAULT_IGNORE = ('__pycache__', '.git', '__init__.py')
 
 
-def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->Iterator[Tuple[str, int]]:
+def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->Generator[Tuple[Path, str, int], None, None]:
     """
     params:
         starting_dir: the directory you start in
         ignored_globs: glob patterns that should be ignored in iteration
         max_depth: The maximum depth to go into the file tree
-    returns: The documantion string
+    returns: a tuple of (path,docstring,depth)
     """
 
     item: Path
