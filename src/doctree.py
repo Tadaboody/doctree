@@ -1,7 +1,7 @@
 """The main tree script"""
 from functools import partial
 from pathlib import Path
-from typing import Iterator, Tuple, Generator
+from typing import Tuple, Generator
 
 from src.git_ignored_files import git_ignored_files
 from src.py_comment_extractor import module_docstring, package_docstring
@@ -23,7 +23,7 @@ def ignored(filename: Path, starting_dir: Path, ignored_globs: Tuple[Path, ...])
 DEFAULT_IGNORE = ('__pycache__', '.git', '__init__.py')
 
 
-def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->Generator[Tuple[Path, str, int], None, None]:
+def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None) -> Generator[Tuple[Path, str, int], None, None]:
     """
     params:
         starting_dir: the directory you start in
@@ -45,16 +45,12 @@ def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None)->
         yield item, doc, depth
 
 
-def depth_seperator(indent_char: str, depth: int, is_dir: bool)->str:
+def depth_seperator(indent_char: str, depth: int, is_dir: bool) -> str:
     """Returns the prefix to display a node of `depth`"""
     return f"{indent_char}{f' {indent_char}'*depth}{BACKSLASH if is_dir else ''}"
 
 
-def print_doctree(starting_dir: str, max_depth: int=None):
+def doctree(starting_dir: str, max_depth: int = None):
     """Prints the doctree in a markdown-tolerant way"""
     for file, doc, depth in tree_dir(Path(starting_dir), max_depth=max_depth):
-        print(depth_seperator('|', depth, file.is_dir()) + file.name + doc)
-
-
-if __name__ == '__main__':
-    print_doctree('.')
+        yield depth_seperator('|', depth, file.is_dir()) + file.name + doc
