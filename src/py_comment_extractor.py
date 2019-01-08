@@ -1,10 +1,7 @@
 """Extracts comments from python files"""
-import importlib
 import logging
 import os
 from pathlib import Path
-from types import ModuleType
-from typing import Any
 
 INIT_FILE = '__init__.py'
 
@@ -23,7 +20,7 @@ def module_docstring(module_path: os.PathLike) -> str:
         module_doc = ast.get_docstring(non_import_body[0])
     if not module_doc:
         return ''
-    return inspect.cleandoc(module_doc)
+    return inspect.cleandoc(module_doc).splitlines()[0]
 
 def package_docstring(package_path: Path) -> str:
     """Returns the packages docstring, extracted by its `__init__.py` file"""
