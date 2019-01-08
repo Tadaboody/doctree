@@ -1,12 +1,13 @@
-from src import tree_dir,util
-from glob import glob
+from src import doctree
+from pathlib import Path
+import logging
+
 
 def test_all_in_tree():
-    import os
-    FILE_DIR = os.path.abspath(os.path.dirname(__file__))
-    test_dir = os.path.join(FILE_DIR,'test_dir')
-    tree = tree_dir(test_dir)
-    with util.cd(test_dir):
-        assert(glob('*',recursive=True))
-        assert(all(any(g_path in line for line in tree.splitlines())
-                   for g_path in glob('*', recursive=True)))
+    """Tests that all of the test_dir is represented in the output string"""
+    FILE_DIR = Path(__file__).parent
+    test_dir = FILE_DIR/'test_dir'
+    output = list(doctree.doctree(test_dir))
+    logging.debug(output)
+    for test_file in (str(file) for file in test_dir.glob('*')):
+        assert any(test_file in line for line in output)
