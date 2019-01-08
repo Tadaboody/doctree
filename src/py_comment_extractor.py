@@ -1,35 +1,37 @@
 """Extracts comments from python files"""
+import importlib
+import logging
+import os
 from pathlib import Path
-import importlib.util
 from types import ModuleType
 from typing import Any
-import os
-import logging
+
 INIT_FILE = '__init__.py'
 
-
-def import_module(module_path: os.PathLike) -> ModuleType:
-    module_pathlib_path = Path(module_path)
-    spec:Any = importlib.util.spec_from_file_location(
-        module_pathlib_path.name, str(module_pathlib_path))
-    module:Any = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    logging.debug(module)
-    return module
-
-
 def module_docstring(module_path: os.PathLike) -> str:
-    logging.debug(module_path)
+    import ast
+    import inspect
+    module_path = Path(module_path)
     try:
-        return import_module(module_path).__doc__ or ''
-    except Exception:  # pylint: disable=broad-except
+        module_ast = ast.parse(module_path.read_text(),filename=module_path.name)
+    except SyntaxError:
         return ''
+    module_doc = ast.get_docstring(module_ast)
+    if not module_doc and len( module_ast.body ) == 1 and isinstance(module_ast.body[0], (ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef)):
+        module_doc = ast.get_docstring(module_ast.body[0])
+    if not module_doc:
+        return ''
+    return inspect.cleandoc(module_doc)
 
-
-def package_docstring(package_path: Path)->str:
+def package_docstring(package_path: Path) -> str:
     """Returns the packages docstring, extracted by its `__init__.py` file"""
     logging.debug(package_path)
-    init_file =package_path/ INIT_FILE
+    init_file = package_path / INIT_FILE
     if package_path.is_dir() and init_file.exists():
         return module_docstring(init_file)
     return ''
+def docstring(path:Path):
+    try:
+        return package_docstring(path) if path.is_dir() else module_docstring(path)
+    except UnicodeDecodeError: # just in case. probably better to check that path is a python file with `inspect`
+        return ''
