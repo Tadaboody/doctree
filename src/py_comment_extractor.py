@@ -17,8 +17,10 @@ def module_docstring(module_path: os.PathLike) -> str:
     except SyntaxError:
         return ''
     module_doc = ast.get_docstring(module_ast)
-    if not module_doc and len( module_ast.body ) == 1 and isinstance(module_ast.body[0], (ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef)):
-        module_doc = ast.get_docstring(module_ast.body[0])
+    non_import_body = module_ast.body
+    non_import_body = [ node for node in module_ast.body if not isinstance(node, (ast.Import, ast.ImportFrom)) ]
+    if not module_doc and len( non_import_body ) == 1 and isinstance(non_import_body[0], (ast.ClassDef,ast.FunctionDef,ast.AsyncFunctionDef)):
+        module_doc = ast.get_docstring(non_import_body[0])
     if not module_doc:
         return ''
     return inspect.cleandoc(module_doc)
