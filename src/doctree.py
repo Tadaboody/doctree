@@ -1,28 +1,34 @@
 """The main tree script"""
-from functools import partial
+import os
+import subprocess
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Tuple, Generator
+from typing import Iterable, Iterator, Set, Tuple
 
-from src.git_ignored_files import git_ignored_files
 from src.py_comment_extractor import docstring
-from src.dfs import dfs, safe_iterdir
 
 BACKSLASH = '\\'
 
-
-def ignored(filename: Path, starting_dir: Path, ignored_globs: Tuple[Path, ...]):
-    """Check if a file is ignored by the user"""
-    if filename == starting_dir:
-        return False
-    path_ignored = git_ignored_files(
-        starting_dir) + ignored_globs
-    return any(filename.match(str(path)) for path in path_ignored)
-
-
 DEFAULT_IGNORE = ('__pycache__', '.git', '__init__.py')
 
+def path_depth(path:Path)->int:
+    return len(path.parents) - 1 
+def with_dirs(paths:Iterable[os.PathLike]) -> Iterator[Path]:
+    """Yields `paths` with the dirs as they appear"""
+    known_dirs:Set[Path] = { Path('.') }
+    path:Path
+    for path in ( Path(path) for path in paths ):
+        yield from set(path.parents) - known_dirs
+        known_dirs = known_dirs.union(set( path.parents ))
+        yield path
+@contextmanager
+def cd(path:Path):
+    old_path = Path.cwd()
+    os.chdir(path)
+    yield
+    os.chdir(old_path)
 
-def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None) -> Generator[Tuple[Path, str, int], None, None]:
+def tree_dir(starting_dir: Path='.', ignored_globs=DEFAULT_IGNORE, max_depth=None) -> Iterator[Tuple[Path, str, int]]:
     """
     params:
         starting_dir: the directory you start in
@@ -30,18 +36,12 @@ def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None) -
         max_depth: The maximum depth to go into the file tree
     returns: a tuple of (path,docstring,depth)
     """
-
-    item: Path
-    ignored_in_tree = partial(
-        ignored, starting_dir=starting_dir, ignored_globs=ignored_globs)
-    dfs_walk = dfs(Path(starting_dir), safe_iterdir,
-                   predicate=ignored_in_tree, max_depth=max_depth)
-    for item, depth in dfs_walk:
-        # item is all the things in the directory that does not ignored
-        full_path = Path.resolve(item)
-        doc = docstring(full_path)
-        doc = f'  # {doc}' if doc else ''
-        yield item, doc, depth
+    with cd(starting_dir):
+        out = subprocess.check_output(('git', 'ls-files')).decode()
+        for path in ( path for path in with_dirs(out.splitlines()) if (not max_depth or path_depth(path) <=max_depth ) ):
+            doc = docstring(path)
+            doc = f'  # {doc}' if doc else ''
+            yield path, doc, path_depth(path)
 
 
 def depth_seperator(indent_char: str, depth: int, is_dir: bool) -> str:
