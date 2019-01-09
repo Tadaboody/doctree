@@ -4,11 +4,10 @@ from pathlib import Path
 from typing import Tuple, Generator
 
 from src.git_ignored_files import git_ignored_files
-from src.py_comment_extractor import module_docstring, package_docstring
+from src.py_comment_extractor import docstring
 from src.dfs import dfs, safe_iterdir
 
 BACKSLASH = '\\'
-SLASH = '/'
 
 
 def ignored(filename: Path, starting_dir: Path, ignored_globs: Tuple[Path, ...]):
@@ -40,8 +39,8 @@ def tree_dir(starting_dir: Path, ignored_globs=DEFAULT_IGNORE, max_depth=None) -
     for item, depth in dfs_walk:
         # item is all the things in the directory that does not ignored
         full_path = Path.resolve(item)
-        docstring = module_docstring(full_path) + package_docstring(full_path)
-        doc = f'  # {module_docstring(full_path)}' if docstring else ''
+        doc = docstring(full_path)
+        doc = f'  # {doc}' if doc else ''
         yield item, doc, depth
 
 
